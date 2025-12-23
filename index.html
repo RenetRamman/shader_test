@@ -44,11 +44,29 @@
                     </label>
 
                     <label>
+                        Target Framerate:
+                        <span id="fpsText">INF</span>
+                        <input
+                            type="range"
+                            id="speedSlider"
+                            min="1"
+                            max="61"
+                            step="1"
+                            value="61"
+                        />
+                    </label>
+
+                    <label>
                         Pause
-                        <div id="pauseAdditional">
+                        <span id="pauseAdditional">
                             Use the 'n' key to progress simulation by 1 frame
-                        </div>
+                        </span>
                         <input type="checkbox" id="pauseToggle" />
+                    </label>
+
+                    <label
+                        >Image
+                        <select id="imageSelect"></select>
                     </label>
                 </div>
             </div>

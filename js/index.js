@@ -7,16 +7,21 @@ var renderer,
   bufferScene,
   mesh,
   deltaTime,
+  timeSinceStart,
   zoom,
   brushSize;
 
 var paused = false;
 var nextFrameRequested = false;
+var frameReady = true;
+var framerate = 61;
+var lastFrameTime = 0;
+var images = Array();
 var shaders = {
   vertexShader: "shaders/vertex.vert",
   fragmentShader: "shaders/game_of_life.frag",
   bufferShader: "shaders/buffer.frag",
-  image: "images/christmas.jpg", // TODO: add option to easily change input image
+  image: "christmas.jpg", // TODO: add option to easily change input image
 };
 const sizes = {
   width: window.innerWidth,
@@ -24,11 +29,13 @@ const sizes = {
 };
 var loader = new THREE.FileLoader();
 var texLoader = new THREE.TextureLoader();
+texLoader.setPath("/images/");
 
 // Hamburger menu stuff
 const menuButton = document.getElementById("menuButton");
 const menuPanel = document.getElementById("menuPanel");
 const pauseText = document.getElementById("pauseAdditional");
+const framerateText = document.getElementById("fpsText");
 
 menuButton.addEventListener("click", () => {
   menuPanel.style.display =
@@ -46,7 +53,38 @@ window.addEventListener("keydown", (e) => {
 // Control hooks
 const zoomSlider = document.getElementById("zoomSlider");
 const brushSlider = document.getElementById("brushSlider");
+const speedSlider = document.getElementById("speedSlider");
 const pauseToggle = document.getElementById("pauseToggle");
+const imageSelect = document.getElementById("imageSelect");
+
+// TODO: this is a hackjob. Works locally with python simplehttp server
+async function listImages() {
+  const response = await fetch("/images/");
+  const html = await response.text();
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const links = [...doc.querySelectorAll("a")]
+    .map((a) => a.getAttribute("href"))
+    .filter(
+      (name) =>
+        name &&
+        !name.startsWith("?") &&
+        !name.startsWith("/") &&
+        !name.endsWith("/"),
+    );
+  for (const image of links) {
+    const option = document.createElement("option");
+    option.value = image;
+    option.textContent = image;
+    imageSelect.appendChild(option);
+  }
+  return links;
+}
+
+images = await listImages();
+console.log(images);
 
 async function init() {
   var files_loaded = 0;
@@ -78,7 +116,7 @@ async function init() {
 init();
 
 function finishShaderLoading() {
-  deltaTime = 0.0;
+  timeSinceStart = 0.0;
   zoom = 1.0;
   const canvas = document.getElementById("c");
   renderer = new THREE.WebGLRenderer({ canvas });
@@ -92,6 +130,11 @@ function finishShaderLoading() {
     sizes.width,
     sizes.height,
     window.devicePixelRatio,
+  );
+
+  const imageResolution = new THREE.Vector2(
+    shaders.image.image.width,
+    shaders.image.image.height,
   );
 
   var renderBufferA = new THREE.WebGLRenderTarget(sizes.width, sizes.height, {
@@ -115,6 +158,7 @@ function finishShaderLoading() {
       value: shaders.image,
     },
     u_resolution: { value: resolution },
+    u_image_resolution: { value: imageResolution },
     u_time: { value: 0.0 },
     u_mouse: { value: { x: 0, y: 0 } },
     u_zoom: { value: 1.0 },
@@ -190,14 +234,32 @@ function finishShaderLoading() {
     uniforms.u_brush_size.value = parseFloat(e.target.value);
   });
 
+  speedSlider.addEventListener("input", (e) => {
+    framerate = parseFloat(e.target.value);
+    framerateText.textContent = framerate != 61 ? framerate : "INF";
+  });
+
   pauseToggle.addEventListener("change", (e) => {
     paused = e.target.checked;
     pauseText.style.display =
       pauseText.style.display === "block" ? "none" : "block";
   });
 
+  imageSelect.addEventListener("change", (e) => {
+    const selectedImage = e.target.value;
+    texLoader.load(selectedImage, function (data) {
+      data.minFilter = THREE.NearestFilter;
+      data.magFilter = THREE.NearestFilter;
+      frameReady = false;
+      uniforms.u_texture.value = data;
+      uniforms.u_time.value = 0.0;
+      timeSinceStart = 0;
+    });
+  });
+
   animate();
 
+  // FIXME: This messes up the simulation
   function onWindowResize(event) {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
@@ -210,11 +272,11 @@ function finishShaderLoading() {
     bufferMaterial.uniforms.u_resolution.value.y = sizes.height;
   }
 
-  // TODO: add framerate limiter, optionally make it ajustabe mid-simulation
-  // possibly add option to pause and progress simulation by one frame on demand
   function animate() {
     zoomSlider.value = zoom;
-    if (!paused || nextFrameRequested) {
+    frameReady = framerate === 61 ? true : 1 / framerate <= lastFrameTime;
+    deltaTime = clock.getDelta();
+    if ((!paused && frameReady) || nextFrameRequested) {
       renderer.setRenderTarget(renderBufferA);
       renderer.render(bufferScene, camera);
       mesh.material.uniforms.u_texture.value = renderBufferA.texture;
@@ -225,15 +287,17 @@ function finishShaderLoading() {
       renderBufferB = temp;
       bufferMaterial.uniforms.u_texture.value = renderBufferB.texture;
       nextFrameRequested = false;
+      lastFrameTime = 0;
     }
+    lastFrameTime += deltaTime;
 
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
 
     requestAnimationFrame(animate);
-    deltaTime += clock.getDelta();
-    material.uniforms.u_time.value = deltaTime;
-    bufferMaterial.uniforms.u_time.value = deltaTime;
+    timeSinceStart += deltaTime;
+    material.uniforms.u_time.value = timeSinceStart;
+    bufferMaterial.uniforms.u_time.value = timeSinceStart;
     // console.log(mesh.material.uniforms.u_time.value);
     // console.log(mesh.material.uniforms.u_mouse.value);
     // console.log(mesh.material.uniforms.u_resolution);
