@@ -4,6 +4,7 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec2 u_mouse;
 uniform float u_zoom;
+uniform float u_brush_size;
 
 varying vec2 v_uv;
 
@@ -46,7 +47,7 @@ void main() {
 
     // draw on screen
     vec2 zoomed_uv = (v_uv - mouse) * u_zoom + mouse;
-    if (distance((v_uv - mouse) * u_zoom + mouse, mouse) < 0.005 * u_zoom
+    if (distance((v_uv - mouse) * u_zoom + mouse, mouse) < 0.0025 * u_zoom * u_brush_size
             && u_time > delay) {
         color = vec3(1.0);
     }
