@@ -1,5 +1,4 @@
 var renderer,
-  uniforms,
   vshader,
   fshader,
   camera,
@@ -8,9 +7,9 @@ var renderer,
   mesh,
   deltaTime,
   timeSinceStart,
-  zoom,
-  brushSize;
+  zoom;
 
+var paint = false;
 var paused = false;
 var nextFrameRequested = false;
 var frameReady = true;
@@ -26,6 +25,19 @@ var shaders = {
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
+};
+const uniforms = {
+  u_texture: {
+    value: null,
+  },
+  u_resolution: { value: null },
+  u_image_resolution: { value: null },
+  u_time: { value: 0.0 },
+  u_mouse: { value: { x: 0, y: 0 } },
+  u_zoom: { value: 1.0 },
+  u_brush_size: { value: null },
+  u_grid_enable: { value: false },
+  u_paint: { value: paint },
 };
 var loader = new THREE.FileLoader();
 var texLoader = new THREE.TextureLoader();
@@ -46,8 +58,25 @@ document.addEventListener("click", (e) => {
     menuPanel.style.display = "none";
   }
 });
+
+function doPause() {
+  paused = !paused;
+  pauseToggle.checked = !pauseToggle.checked;
+  pauseText.style.display =
+    pauseText.style.display === "block" ? "none" : "block";
+}
+
 window.addEventListener("keydown", (e) => {
   if (e.key === "n") nextFrameRequested = true;
+  else if (e.key === " ") doPause();
+});
+
+window.addEventListener("mousedown", () => {
+  uniforms.u_paint.value = true;
+});
+
+window.addEventListener("mouseup", () => {
+  uniforms.u_paint.value = false;
 });
 
 // Control hooks
@@ -125,18 +154,10 @@ function finishShaderLoading() {
     stencilBuffer: false,
   });
 
-  const uniforms = {
-    u_texture: {
-      value: shaders.image,
-    },
-    u_resolution: { value: resolution },
-    u_image_resolution: { value: imageResolution },
-    u_time: { value: 0.0 },
-    u_mouse: { value: { x: 0, y: 0 } },
-    u_zoom: { value: 1.0 },
-    u_brush_size: { value: 1.0 },
-    u_grid_enable: { value: false },
-  };
+  uniforms.u_texture.value = shaders.image;
+  uniforms.u_resolution.value = resolution;
+  uniforms.u_image_resolution.value = imageResolution;
+  uniforms.u_brush_size.value = brushSlider.value;
 
   const bufferMaterial = new THREE.ShaderMaterial({
     uniforms: uniforms,
@@ -167,11 +188,9 @@ function finishShaderLoading() {
   } else {
     window.addEventListener("resize", onWindowResize, false);
     document.addEventListener("mousemove", move);
-    document.addEventListener("wheel", doZoom);
+    document.addEventListener("wheel", handleWheel);
   }
 
-  // FIXME: inaccurate scroll wheel zoom due to floating point errors.
-  // Use integers divided by 10 instead?
   function doZoom(evt) {
     if (evt.deltaY < 0 && zoom >= 0.1) {
       zoom = Number((zoom - parseFloat(zoomSlider.step)).toFixed(3));
@@ -180,6 +199,23 @@ function finishShaderLoading() {
     }
     material.uniforms.u_zoom.value = zoom;
     bufferMaterial.uniforms.u_zoom.value = zoom;
+  }
+
+  function resizeBrush(evt) {
+    var brushSize = Number(brushSlider.value);
+    if (evt.deltaY < 0 && brushSize > brushSlider.min) {
+      brushSize = brushSize - Number(brushSlider.step);
+    } else if (evt.deltaY > 0 && brushSize < brushSlider.max) {
+      brushSize = brushSize + Number(brushSlider.step);
+    }
+    uniforms.u_brush_size.value = brushSize;
+    brushSlider.value = brushSize;
+  }
+
+  function handleWheel(evt) {
+    evt.preventDefault();
+    if (evt.shiftKey) resizeBrush(evt);
+    else doZoom(evt);
   }
 
   function move(evt) {

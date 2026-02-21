@@ -6,6 +6,7 @@ uniform vec2 u_mouse;
 uniform float u_zoom;
 uniform float u_brush_size;
 uniform bool u_grid_enable;
+uniform bool u_paint;
 
 varying vec2 v_uv;
 
@@ -84,7 +85,7 @@ void main() {
     // }
 
     // Draw on screen
-    if (distance(u_mouse.xy, gl_FragCoord.xy) < 1.0 * u_brush_size && u_time > delay) {
+    if (u_paint && distance(u_mouse.xy, gl_FragCoord.xy) < 1.0 * u_brush_size && u_time > delay) {
         color = vec3(1.0);
     }
 
