@@ -173,10 +173,10 @@ function finishShaderLoading() {
   // FIXME: inaccurate scroll wheel zoom due to floating point errors.
   // Use integers divided by 10 instead?
   function doZoom(evt) {
-    if (evt.deltaY < 0 && zoom >= 0.2) {
-      zoom -= 0.1;
+    if (evt.deltaY < 0 && zoom >= 0.1) {
+      zoom = Number((zoom - parseFloat(zoomSlider.step)).toFixed(3));
     } else if (evt.deltaY > 0 && zoom < 1) {
-      zoom += 0.1;
+      zoom = Number((zoom + parseFloat(zoomSlider.step)).toFixed(3));
     }
     material.uniforms.u_zoom.value = zoom;
     bufferMaterial.uniforms.u_zoom.value = zoom;
