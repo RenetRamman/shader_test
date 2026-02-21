@@ -21,3 +21,16 @@ or
     python -m http.server 8000 -d .
 
 then navigate to the following address in your browser http://127.0.0.1:8000/
+
+# Hosting w firebase
+update the cli tool:
+    curl -sL https://firebase.tools | upgrade=true bash
+
+Login to firebase:
+    firebase login
+  
+List existing projects:
+    firebase projects:list
+
+Update project:
+    firebase deploy
