@@ -7,6 +7,7 @@ uniform float u_zoom;
 uniform float u_brush_size;
 uniform bool u_grid_enable;
 uniform bool u_paint;
+uniform float u_pattern[1024];
 
 varying vec2 v_uv;
 
@@ -28,6 +29,18 @@ float GetNeighbours(vec2 p) {
     }
 
     return count;
+}
+
+float paint(vec2 p, vec2 m) {
+    for (float x = 2.0; x <= 9999.0; x++) {
+        if (x >= u_pattern[0] * u_pattern[1]) break;
+        if (floor(p.x) == m.x + float(mod(x, u_pattern[0]))) {
+            if (floor(p.y) == m.y - float(int(x / u_pattern[0]))) {
+                return u_pattern[int(x)];
+            }
+        }
+    }
+    return 0.0;
 }
 
 
@@ -88,6 +101,14 @@ void main() {
     if (u_paint && distance(u_mouse.xy, gl_FragCoord.xy) < 1.0 * u_brush_size && u_time > delay) {
         color = vec3(1.0);
     }
+
+    // Paint on screen
+    // if (u_paint) {
+    //     float col = paint(gl_FragCoord.xy, u_mouse.xy);
+    //     if (col == 1.0) {
+    //         color = vec3(col);
+    //     }
+    // }
 
     gl_FragColor = vec4(color, 1.0);
 }

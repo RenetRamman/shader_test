@@ -1,3 +1,7 @@
+import { glider_gun, gosper_glider_gun } from "./patterns.js";
+
+console.log(gosper_glider_gun);
+
 var renderer,
   vshader,
   fshader,
@@ -38,6 +42,7 @@ const uniforms = {
   u_brush_size: { value: null },
   u_grid_enable: { value: false },
   u_paint: { value: paint },
+  u_pattern: { value: null },
 };
 var loader = new THREE.FileLoader();
 var texLoader = new THREE.TextureLoader();
@@ -158,6 +163,7 @@ function finishShaderLoading() {
   uniforms.u_resolution.value = resolution;
   uniforms.u_image_resolution.value = imageResolution;
   uniforms.u_brush_size.value = brushSlider.value;
+  uniforms.u_pattern.value = gosper_glider_gun;
 
   const bufferMaterial = new THREE.ShaderMaterial({
     uniforms: uniforms,
@@ -314,5 +320,7 @@ function finishShaderLoading() {
     // console.log(mesh.material.uniforms.u_time.value);
     // console.log(mesh.material.uniforms.u_mouse.value);
     // console.log(mesh.material.uniforms.u_resolution);
+
+    // console.log(uniforms.u_mouse.value);
   }
 }
