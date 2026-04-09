@@ -1,0 +1,9 @@
+{
+  "defaultFile": "flower_orange.jpg",
+  "images": [
+    { "file": "flower_orange.jpg", "label": "Orange flower" },
+    { "file": "flower_purple.JPG", "label": "Purple flower" },
+    { "file": "sand.JPG", "label": "Sand" },
+    { "file": "christmas.jpg", "label": "Christmas" }
+  ]
+}

@@ -13,12 +13,34 @@
                 <title>test shader</title>
             </head>
             <canvas id="c"></canvas>
-            <canvas id="c"></canvas>
 
             <div id="menu">
                 <button id="menuButton">☰</button>
 
                 <div id="menuPanel">
+                    <label>
+                        Paint tool
+                        <select id="paintToolSelect">
+                            <option value="brush" selected>Paintbrush</option>
+                            <option value="single_cell">Single cell</option>
+                            <option value="glider_gun">Glider gun (small)</option>
+                            <option value="gosper_glider_gun">
+                                Gosper glider gun
+                            </option>
+                            <option value="simkin_glider_gun">
+                                Simkin glider gun (period 120)
+                            </option>
+                            <option value="pulsar">Pulsar (period 3)</option>
+                            <option value="acorn">Acorn (methuselah)</option>
+                            <option value="r_pentomino">
+                                R-pentomino (methuselah)
+                            </option>
+                            <option value="lwss">
+                                LWSS (lightweight spaceship)
+                            </option>
+                        </select>
+                    </label>
+
                     <label>
                         Zoom
                         <input
@@ -31,7 +53,7 @@
                         />
                     </label>
 
-                    <label>
+                    <label id="brushSliderLabel">
                         Brush Size
                         <input
                             type="range"

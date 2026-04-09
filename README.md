@@ -4,9 +4,8 @@ This is a simulation of cellular automaton, [Conway's Game of Life](https://en.w
 
 The simulation begins by loading an image and using it as a starting point. All pixels which are at least 50% red will be considered alive.
 
-Simulation settings, including the starting image can be changed from the hambruger menu at the top right corner of the window. New images can be added to the simulation by copying them into the [/images](/images) directory under project files. Do not remove christmas.jpg from the directory, it is necessary for launching the application for now.
-
-The simulation can be paused from the graphical UI and advanced by a single frame by pressing the 'n' key.
+Simulation settings, including the starting image can be changed from the hambruger menu at the top right corner of the window.
+The simulation can be paused from the graphical UI or by pressing the 'space' key and advanced by a single frame by pressing the 'n' key.
 
 # Getting Started
 

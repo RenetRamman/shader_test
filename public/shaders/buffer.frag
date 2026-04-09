@@ -3,11 +3,12 @@ uniform sampler2D u_texture;
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec2 u_mouse;
-uniform float u_zoom;
 uniform float u_brush_size;
 uniform bool u_grid_enable;
 uniform bool u_paint;
-uniform float u_pattern[1024];
+uniform bool u_brush_mode;
+uniform sampler2D u_patternTex;
+uniform vec2 u_patternDims;
 
 varying vec2 v_uv;
 
@@ -31,19 +32,30 @@ float GetNeighbours(vec2 p) {
     return count;
 }
 
-float paint(vec2 p, vec2 m) {
-    for (float x = 2.0; x <= 9999.0; x++) {
-        if (x >= u_pattern[0] * u_pattern[1]) break;
-        if (floor(p.x) == m.x + float(mod(x, u_pattern[0]))) {
-            if (floor(p.y) == m.y - float(int(x / u_pattern[0]))) {
-                return u_pattern[int(x)];
-            }
+// Pattern in u_patternTex: row-major, row 0 = top; size u_patternDims (width, height).
+// Uses a texture because WebGL1 often breaks on non-constant indices into uniform float[].
+// Cursor (m) is framebuffer pixels; top-left cell of pattern anchors at floor(m).
+float patternStamp(vec2 p, vec2 m) {
+    float w = u_patternDims.x;
+    float h = u_patternDims.y;
+    if (w < 1.0 || h < 1.0)
+        return 0.0;
+    vec2 anchor = floor(m);
+    for (float row = 0.0; row < 64.0; row += 1.0) {
+        if (row >= h)
+            break;
+        for (float col = 0.0; col < 64.0; col += 1.0) {
+            if (col >= w)
+                break;
+            vec2 uv = (vec2(col, row) + 0.5) / vec2(w, h);
+            if (texture2D(u_patternTex, uv).r < 0.5)
+                continue;
+            if (floor(p.x) == anchor.x + col && floor(p.y) == anchor.y - row)
+                return 1.0;
         }
     }
     return 0.0;
 }
-
-
 
 void main() {
     vec3 color = vec3(0.0);
@@ -56,10 +68,10 @@ void main() {
         color = vec3(1.0);
     }
 
-    // // show image for some time
-    // if (u_time <= delay) {
-    //     color = texture2D(u_texture, v_uv).rgb;
-    // }
+    // show image for some time
+    if (u_time <= delay) {
+        color = texture2D(u_texture, v_uv).rgb;
+    }
 
     // color = vec3(v_uv.x, v_uv.y, 1.0);
     // color = vec3(gl_FragCoord.xy / u_resolution.xy, 1.0);
@@ -88,7 +100,6 @@ void main() {
         color += vec3(0.0, stripey * 0.5 * (y / u_resolution.y), 0.0);
     }
 
-
     // // Debug cross
     // if (distance(u_mouse.x, gl_FragCoord.x) < 10.0) {
     //     color = vec3(0.0);
@@ -97,18 +108,16 @@ void main() {
     //     color = vec3(0.0);
     // }
 
-    // Draw on screen
-    if (u_paint && distance(u_mouse.xy, gl_FragCoord.xy) < 1.0 * u_brush_size && u_time > delay) {
-        color = vec3(1.0);
+    if (u_paint) {
+        if (u_brush_mode) {
+            if (distance(u_mouse.xy, gl_FragCoord.xy) < u_brush_size)
+                color = vec3(1.0);
+        } else {
+            float stamped = patternStamp(gl_FragCoord.xy, u_mouse.xy);
+            if (stamped > 0.5)
+                color = vec3(1.0);
+        }
     }
-
-    // Paint on screen
-    // if (u_paint) {
-    //     float col = paint(gl_FragCoord.xy, u_mouse.xy);
-    //     if (col == 1.0) {
-    //         color = vec3(col);
-    //     }
-    // }
 
     gl_FragColor = vec4(color, 1.0);
 }

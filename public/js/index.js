@@ -1,6 +1,67 @@
-import { glider_gun, gosper_glider_gun } from "./patterns.js";
+import {
+  acorn,
+  glider_gun,
+  gosper_glider_gun,
+  lwss,
+  pulsar,
+  r_pentomino,
+  simkin_glider_gun,
+  single_cell,
+} from "./patterns.js";
 
-console.log(gosper_glider_gun);
+/** 1×1 dead cell; brush mode never samples the pattern texture. */
+const PATTERN_PLACEHOLDER = [1, 1, 0];
+
+var patternDataTexture = null;
+
+function setPatternFromFlat(flat) {
+  const w = flat[0];
+  const h = flat[1];
+  const cells = flat.slice(2);
+  if (patternDataTexture) {
+    patternDataTexture.dispose();
+    patternDataTexture = null;
+  }
+  const data = new Uint8Array(w * h * 4);
+  for (let row = 0; row < h; row++) {
+    for (let col = 0; col < w; col++) {
+      const v = cells[row * w + col] ? 255 : 0;
+      const idx = (row * w + col) * 4;
+      data[idx] = v;
+      data[idx + 1] = v;
+      data[idx + 2] = v;
+      data[idx + 3] = 255;
+    }
+  }
+  patternDataTexture = new THREE.DataTexture(
+    data,
+    w,
+    h,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+  );
+  patternDataTexture.minFilter = THREE.NearestFilter;
+  patternDataTexture.magFilter = THREE.NearestFilter;
+  patternDataTexture.wrapS = THREE.ClampToEdgeWrapping;
+  patternDataTexture.wrapT = THREE.ClampToEdgeWrapping;
+  patternDataTexture.generateMipmaps = false;
+  patternDataTexture.flipY = false;
+  patternDataTexture.needsUpdate = true;
+  uniforms.u_patternTex.value = patternDataTexture;
+  uniforms.u_patternDims.value.set(w, h);
+}
+
+const PAINT_TOOLS = {
+  brush: { pattern: PATTERN_PLACEHOLDER, brushMode: true },
+  single_cell: { pattern: single_cell, brushMode: false },
+  glider_gun: { pattern: glider_gun, brushMode: false },
+  gosper_glider_gun: { pattern: gosper_glider_gun, brushMode: false },
+  simkin_glider_gun: { pattern: simkin_glider_gun, brushMode: false },
+  pulsar: { pattern: pulsar, brushMode: false },
+  acorn: { pattern: acorn, brushMode: false },
+  r_pentomino: { pattern: r_pentomino, brushMode: false },
+  lwss: { pattern: lwss, brushMode: false },
+};
 
 var renderer,
   vshader,
@@ -13,18 +74,21 @@ var renderer,
   timeSinceStart,
   zoom;
 
-var paint = false;
+/** Pattern mode: set on pointer down; consumed on the next simulation step. */
+var stampPending = false;
+/** Brush mode: true while primary button held on canvas. */
+var brushPointerDown = false;
 var paused = false;
 var nextFrameRequested = false;
 var frameReady = true;
 var framerate = 61;
 var lastFrameTime = 0;
-var images = Array();
 var shaders = {
   vertexShader: "shaders/vertex.vert",
   fragmentShader: "shaders/game_of_life.frag",
   bufferShader: "shaders/buffer.frag",
-  image: "christmas.jpg", // TODO: add option to easily change input image
+  /** Basename under /images/; set from images/manifest.json in init(). */
+  image: null,
 };
 const sizes = {
   width: window.innerWidth,
@@ -41,8 +105,10 @@ const uniforms = {
   u_zoom: { value: 1.0 },
   u_brush_size: { value: null },
   u_grid_enable: { value: false },
-  u_paint: { value: paint },
-  u_pattern: { value: null },
+  u_paint: { value: false },
+  u_brush_mode: { value: true },
+  u_patternTex: { value: null },
+  u_patternDims: { value: new THREE.Vector2(1, 1) },
 };
 var loader = new THREE.FileLoader();
 var texLoader = new THREE.TextureLoader();
@@ -51,6 +117,7 @@ texLoader.setPath("/images/");
 // Hamburger menu stuff
 const menuButton = document.getElementById("menuButton");
 const menuPanel = document.getElementById("menuPanel");
+const menu = document.getElementById("menu");
 const pauseText = document.getElementById("pauseAdditional");
 const framerateText = document.getElementById("fpsText");
 
@@ -76,23 +143,110 @@ window.addEventListener("keydown", (e) => {
   else if (e.key === " ") doPause();
 });
 
-window.addEventListener("mousedown", () => {
-  uniforms.u_paint.value = true;
-});
-
-window.addEventListener("mouseup", () => {
-  uniforms.u_paint.value = false;
-});
-
 // Control hooks
 const zoomSlider = document.getElementById("zoomSlider");
 const brushSlider = document.getElementById("brushSlider");
+const brushSliderLabel = document.getElementById("brushSliderLabel");
+const paintToolSelect = document.getElementById("paintToolSelect");
 const speedSlider = document.getElementById("speedSlider");
 const pauseToggle = document.getElementById("pauseToggle");
 const gridToggle = document.getElementById("gridToggle");
 const imageSelect = document.getElementById("imageSelect");
 
+/** Matches selected tool; drives pointer + sim-step paint behavior. */
+var paintUsesBrush = true;
+
+function applyPaintTool() {
+  const key = paintToolSelect.value;
+  const tool = PAINT_TOOLS[key] ?? PAINT_TOOLS.brush;
+  paintUsesBrush = tool.brushMode;
+  uniforms.u_brush_mode.value = tool.brushMode;
+  setPatternFromFlat(tool.pattern ?? PATTERN_PLACEHOLDER);
+  stampPending = false;
+  brushPointerDown = false;
+  brushSliderLabel.style.display = tool.brushMode ? "" : "none";
+}
+
+paintToolSelect.addEventListener("change", applyPaintTool);
+
+const IMAGE_MANIFEST_URL = "images/manifest.json";
+
+function imageEntryFile(entry) {
+  return typeof entry === "string" ? entry : entry && entry.file;
+}
+
+function imageEntryLabel(entry) {
+  if (typeof entry === "string") return entry;
+  if (entry && entry.label) return entry.label;
+  const f = imageEntryFile(entry);
+  return f || "";
+}
+
+function applyLoadedImageTexture(tex) {
+  tex.minFilter = THREE.NearestFilter;
+  tex.magFilter = THREE.NearestFilter;
+  frameReady = false;
+  uniforms.u_texture.value = tex;
+  uniforms.u_image_resolution.value.set(tex.image.width, tex.image.height);
+  uniforms.u_time.value = 0.0;
+  timeSinceStart = 0.0;
+}
+
+async function loadImageManifest() {
+  const fallback = {
+    defaultFile: "flower_orange.jpg",
+    images: ["flower_orange.jpg"],
+  };
+  try {
+    const res = await fetch(IMAGE_MANIFEST_URL, { cache: "no-cache" });
+    if (!res.ok) throw new Error(String(res.status));
+    const text = await res.text();
+    const manifest = JSON.parse(text);
+    if (!Array.isArray(manifest.images) || manifest.images.length === 0) {
+      console.warn(
+        "images/manifest.json: missing or empty images[] — using fallback",
+      );
+      return fallback;
+    }
+    return manifest;
+  } catch (e) {
+    console.error(
+      "Could not load images/manifest.json — using fallback list.",
+      e,
+    );
+    return fallback;
+  }
+}
+
+function populateImageSelectFromManifest(manifest) {
+  let entries = manifest.images.filter((e) => imageEntryFile(e));
+  if (entries.length === 0) {
+    entries = ["flower_orange.jpg"];
+  }
+  const files = entries.map((e) => imageEntryFile(e));
+  let defaultFile = manifest.defaultFile || files[0];
+  if (!files.includes(defaultFile)) {
+    defaultFile = files[0];
+  }
+
+  shaders.image = defaultFile;
+
+  imageSelect.innerHTML = "";
+  for (const entry of entries) {
+    const file = imageEntryFile(entry);
+    if (!file) continue;
+    const opt = document.createElement("option");
+    opt.value = file;
+    opt.textContent = imageEntryLabel(entry);
+    imageSelect.appendChild(opt);
+  }
+  imageSelect.value = defaultFile;
+}
+
 async function init() {
+  const manifest = await loadImageManifest();
+  populateImageSelectFromManifest(manifest);
+
   var files_loaded = 0;
 
   function continueIfReady(files, count) {
@@ -103,15 +257,14 @@ async function init() {
     return count;
   }
 
-  // TODO: Refac this mess. Add loader or file type to dict
   for (let [shader, value] of Object.entries(shaders)) {
     if (shader != "image") {
-      await loader.load(value, function (data) {
+      loader.load(value, function (data) {
         shaders[shader] = data;
         files_loaded = continueIfReady(shaders, files_loaded);
       });
     } else {
-      await texLoader.load(value, function (data) {
+      texLoader.load(value, function (data) {
         shaders[shader] = data;
         files_loaded = continueIfReady(shaders, files_loaded);
       });
@@ -132,18 +285,19 @@ function finishShaderLoading() {
 
   const geometry = new THREE.PlaneGeometry(2, 2);
 
-  const resolution = new THREE.Vector3(
-    sizes.width,
-    sizes.height,
-    window.devicePixelRatio,
-  );
-
   const imageResolution = new THREE.Vector2(
     shaders.image.image.width,
     shaders.image.image.height,
   );
 
-  var renderBufferA = new THREE.WebGLRenderTarget(sizes.width, sizes.height, {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(sizes.width, sizes.height);
+
+  const bufW = renderer.domElement.width;
+  const bufH = renderer.domElement.height;
+  const resolution = new THREE.Vector3(bufW, bufH, renderer.getPixelRatio());
+
+  var renderBufferA = new THREE.WebGLRenderTarget(bufW, bufH, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     format: THREE.RGBAFormat,
@@ -151,7 +305,7 @@ function finishShaderLoading() {
     stencilBuffer: false,
   });
 
-  var renderBufferB = new THREE.WebGLRenderTarget(sizes.width, sizes.height, {
+  var renderBufferB = new THREE.WebGLRenderTarget(bufW, bufH, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     format: THREE.RGBAFormat,
@@ -163,7 +317,7 @@ function finishShaderLoading() {
   uniforms.u_resolution.value = resolution;
   uniforms.u_image_resolution.value = imageResolution;
   uniforms.u_brush_size.value = brushSlider.value;
-  uniforms.u_pattern.value = gosper_glider_gun;
+  applyPaintTool();
 
   const bufferMaterial = new THREE.ShaderMaterial({
     uniforms: uniforms,
@@ -185,14 +339,28 @@ function finishShaderLoading() {
 
   camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   camera.position.z = 1;
-  renderer.setSize(window.innerWidth, window.innerHeight);
   const clock = new THREE.Clock();
 
   onWindowResize();
+
+  renderer.domElement.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    if (paintUsesBrush) brushPointerDown = true;
+    else stampPending = true;
+  });
+
+  window.addEventListener("pointerup", () => {
+    brushPointerDown = false;
+  });
+  window.addEventListener("pointercancel", () => {
+    brushPointerDown = false;
+  });
+
+  window.addEventListener("resize", onWindowResize, false);
   if ("ontouchstart" in window) {
     document.addEventListener("touchmove", move);
+    document.addEventListener("touchstart", move, { passive: true });
   } else {
-    window.addEventListener("resize", onWindowResize, false);
     document.addEventListener("mousemove", move);
     document.addEventListener("wheel", handleWheel);
   }
@@ -224,20 +392,24 @@ function finishShaderLoading() {
     else doZoom(evt);
   }
 
+  function clientToBuffer(clientX, clientY) {
+    const el = renderer.domElement;
+    const rect = el.getBoundingClientRect();
+    const scaleX = el.width / rect.width;
+    const scaleY = el.height / rect.height;
+    const bx = (clientX - rect.left) * scaleX;
+    const by = el.height - (clientY - rect.top) * scaleY;
+    return { x: bx, y: by };
+  }
+
   function move(evt) {
-    material.uniforms.u_mouse.value.x = evt.touches
-      ? evt.touches[0].clientX
-      : evt.clientX;
-    material.uniforms.u_mouse.value.y = evt.touches
-      ? evt.touches[0].clientY
-      : resolution.y - evt.clientY;
-    bufferMaterial.uniforms.u_mouse.value.x = evt.touches
-      ? evt.touches[0].clientX
-      : evt.clientX;
-    bufferMaterial.uniforms.u_mouse.value.y = evt.touches
-      ? evt.touches[0].clientY
-      : resolution.y - evt.clientY;
-    return;
+    const cx = evt.touches ? evt.touches[0].clientX : evt.clientX;
+    const cy = evt.touches ? evt.touches[0].clientY : evt.clientY;
+    const p = clientToBuffer(cx, cy);
+    material.uniforms.u_mouse.value.x = p.x;
+    material.uniforms.u_mouse.value.y = p.y;
+    bufferMaterial.uniforms.u_mouse.value.x = p.x;
+    bufferMaterial.uniforms.u_mouse.value.y = p.y;
   }
 
   zoomSlider.addEventListener("input", (e) => {
@@ -266,29 +438,24 @@ function finishShaderLoading() {
 
   imageSelect.addEventListener("change", (e) => {
     const selectedImage = e.target.value;
-    texLoader.load(selectedImage, function (data) {
-      data.minFilter = THREE.NearestFilter;
-      data.magFilter = THREE.NearestFilter;
-      frameReady = false;
-      uniforms.u_texture.value = data;
-      uniforms.u_time.value = 0.0;
-      timeSinceStart = 0;
+    texLoader.load(selectedImage, function (tex) {
+      applyLoadedImageTexture(tex);
     });
   });
 
   animate();
 
-  // FIXME: This messes up the simulation
   function onWindowResize(event) {
-    console.log(renderer.context.drawingBufferWidth);
-    console.log(window.innerWidth);
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(sizes.width, sizes.height);
-    uniforms.u_resolution.value.x = sizes.width;
-    uniforms.u_resolution.value.y = sizes.height;
+    const w = renderer.domElement.width;
+    const h = renderer.domElement.height;
+    uniforms.u_resolution.value.set(w, h, renderer.getPixelRatio());
+    renderBufferA.setSize(w, h);
+    renderBufferB.setSize(w, h);
   }
 
   function animate() {
@@ -296,8 +463,13 @@ function finishShaderLoading() {
     frameReady = framerate === 61 ? true : 1 / framerate <= lastFrameTime;
     deltaTime = clock.getDelta();
     if ((!paused && frameReady) || nextFrameRequested) {
+      const paintActive = paintUsesBrush ? brushPointerDown : stampPending;
+      uniforms.u_paint.value = paintActive;
       renderer.setRenderTarget(renderBufferA);
       renderer.render(bufferScene, camera);
+      uniforms.u_paint.value = false;
+      if (!paintUsesBrush) stampPending = false;
+
       mesh.material.uniforms.u_texture.value = renderBufferA.texture;
 
       // ping-pong buffering
