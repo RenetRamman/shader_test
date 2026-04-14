@@ -4,9 +4,8 @@ This is a simulation of cellular automaton, [Conway's Game of Life](https://en.w
 
 The simulation begins by loading an image and using it as a starting point. All pixels which are at least 50% red will be considered alive.
 
-Simulation settings, including the starting image can be changed from the hambruger menu at the top right corner of the window. New images can be added to the simulation by copying them into the [/images](/images) directory under project files. Do not remove christmas.jpg from the directory, it is necessary for launching the application for now.
-
-The simulation can be paused from the graphical UI and advanced by a single frame by pressing the 'n' key.
+Simulation settings, including the starting image can be changed from the hambruger menu at the top right corner of the window.
+The simulation can be paused from the graphical UI or by pressing the 'space' key and advanced by a single frame by pressing the 'n' key.
 
 # Getting Started
 
@@ -14,10 +13,23 @@ To start the application, open a terminal or console and navigate to the shader_
 
 **run the following command**
 
-    python3 -m http.server 8000 -d .
+    python3 -m http.server 8000 -d public
     
 or
 
-    python -m http.server 8000 -d .
+    python -m http.server 8000 -d public
 
 then navigate to the following address in your browser http://127.0.0.1:8000/
+
+# Hosting w firebase
+update the cli tool:
+    curl -sL https://firebase.tools | upgrade=true bash
+
+Login to firebase:
+    firebase login
+  
+List existing projects:
+    firebase projects:list
+
+Update project:
+    firebase deploy

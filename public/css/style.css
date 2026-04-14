@@ -1,0 +1,159 @@
+body {
+    margin: 0;
+}
+canvas {
+    width: 100%;
+    height: 100%;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#c {
+    display: block;
+}
+
+.launcher {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(1200px 800px at 30% 20%, #1a2a3a 0%, #070a0f 60%, #05070b 100%);
+    color: #eef2ff;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+        Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji",
+        "Segoe UI Emoji";
+}
+
+.launcherCard {
+    width: min(720px, calc(100vw - 48px));
+    border-radius: 16px;
+    padding: 20px;
+    background: rgba(10, 12, 18, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.launcherTitle {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.launcherSubtitle {
+    margin-top: 6px;
+    opacity: 0.85;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.launcherList {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+}
+
+.gameButton {
+    width: 100%;
+    text-align: left;
+    padding: 12px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+}
+
+.gameButton:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.gameButtonTitle {
+    font-weight: 650;
+    font-size: 15px;
+}
+
+.gameButtonDesc {
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.35;
+}
+
+#menu {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    z-index: 10;
+    font-family: sans-serif;
+}
+
+#menuButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+}
+
+#menuPanel {
+    position: absolute;
+    top: 0;
+    right: 48px;
+    width: 200px;
+    padding: 12px;
+    display: none;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border-radius: 8px;
+}
+
+#menuPanel .menuActionButton {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.10);
+    color: white;
+    cursor: pointer;
+}
+
+#menuPanel .menuActionButton:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+#menuPanel label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+#menuPanel input {
+    width: 100%;
+}
+
+#menuPanel select {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px;
+    border-radius: 4px;
+    border: none;
+    background: #222;
+    color: white;
+}
+
+#pauseAdditional {
+    display: none;
+    color: red;
+}
