@@ -2,22 +2,34 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Test shader</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Shader Games</title>
 
         <link rel="stylesheet" href="css/style.css" />
     </head>
 
     <body>
-        <html>
-            <head>
-                <title>test shader</title>
-            </head>
+        <div id="launcher" class="launcher">
+            <div class="launcherCard">
+                <div class="launcherTitle">Shader Games</div>
+                <div class="launcherSubtitle">
+                    Pick a GLSL game to start.
+                </div>
+                <div id="gameList" class="launcherList"></div>
+            </div>
+        </div>
+
+        <div id="gameRoot" style="display: none">
             <canvas id="c"></canvas>
 
             <div id="menu">
-                <button id="menuButton">☰</button>
+                <button id="menuButton" aria-label="Open menu">☰</button>
 
                 <div id="menuPanel">
+                    <button id="backToLauncherButton" class="menuActionButton">
+                        Back to games
+                    </button>
+
                     <label>
                         Paint tool
                         <select id="paintToolSelect">
@@ -91,17 +103,15 @@
                         <input type="checkbox" id="gridToggle" />
                     </label>
 
-                    <label
-                        >Image
+                    <label>
+                        Image
                         <select id="imageSelect"></select>
                     </label>
                 </div>
             </div>
+        </div>
 
-            <body></body>
-        </html>
         <script src="libs/three.min.js"></script>
-
-        <script type="module" src="js/index.js"></script>
+        <script type="module" src="js/main.js"></script>
     </body>
 </html>

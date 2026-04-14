@@ -10,3 +10,4 @@ void main() {
     vec2 zoomed_uv = (v_uv - mouse) * u_zoom + mouse;
     gl_FragColor = texture2D(u_texture, zoomed_uv);
 }
+

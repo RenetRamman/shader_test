@@ -16,6 +16,73 @@ body {
     display: block;
 }
 
+.launcher {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(1200px 800px at 30% 20%, #1a2a3a 0%, #070a0f 60%, #05070b 100%);
+    color: #eef2ff;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+        Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji",
+        "Segoe UI Emoji";
+}
+
+.launcherCard {
+    width: min(720px, calc(100vw - 48px));
+    border-radius: 16px;
+    padding: 20px;
+    background: rgba(10, 12, 18, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.launcherTitle {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.launcherSubtitle {
+    margin-top: 6px;
+    opacity: 0.85;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.launcherList {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+}
+
+.gameButton {
+    width: 100%;
+    text-align: left;
+    padding: 12px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+}
+
+.gameButton:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+
+.gameButtonTitle {
+    font-weight: 650;
+    font-size: 15px;
+}
+
+.gameButtonDesc {
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: 0.85;
+    line-height: 1.35;
+}
+
 #menu {
     position: fixed;
     top: 12px;
@@ -49,6 +116,21 @@ body {
     background: rgba(0, 0, 0, 0.85);
     color: white;
     border-radius: 8px;
+}
+
+#menuPanel .menuActionButton {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.10);
+    color: white;
+    cursor: pointer;
+}
+
+#menuPanel .menuActionButton:hover {
+    background: rgba(255, 255, 255, 0.16);
 }
 
 #menuPanel label {

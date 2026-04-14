@@ -73,23 +73,6 @@ void main() {
         color = texture2D(u_texture, v_uv).rgb;
     }
 
-    // color = vec3(v_uv.x, v_uv.y, 1.0);
-    // color = vec3(gl_FragCoord.xy / u_resolution.xy, 1.0);
-
-    // // Debug lines for pixel width
-    // float x = gl_FragCoord.x;
-    // // Alternate every 1 pixel
-    // float stripe = mod(floor(x), 2.0);
-    // color = vec3(stripe);
-
-    // // Debug grid
-    // float x = gl_FragCoord.x;
-    // float stripex = mod(floor(x), 2.0);
-    // float y = gl_FragCoord.y;
-    // float stripey = mod(floor(y), 2.0);
-    // color += vec3(stripex * 0.5, 0.0, 0.0);
-    // color += vec3(0.0, stripey * 0.5, 0.0);
-
     // Debug grid gradient
     if (u_grid_enable) {
         float x = gl_FragCoord.x;
@@ -99,14 +82,6 @@ void main() {
         color += vec3(stripex * 0.5 * (x / u_resolution.x), 0.0, 0.0);
         color += vec3(0.0, stripey * 0.5 * (y / u_resolution.y), 0.0);
     }
-
-    // // Debug cross
-    // if (distance(u_mouse.x, gl_FragCoord.x) < 10.0) {
-    //     color = vec3(0.0);
-    // }
-    // if (distance(u_mouse.y, gl_FragCoord.y ) < 10.0) {
-    //     color = vec3(0.0);
-    // }
 
     if (u_paint) {
         if (u_brush_mode) {
@@ -121,3 +96,4 @@ void main() {
 
     gl_FragColor = vec4(color, 1.0);
 }
+

@@ -13,11 +13,11 @@ To start the application, open a terminal or console and navigate to the shader_
 
 **run the following command**
 
-    python3 -m http.server 8000 -d .
+    python3 -m http.server 8000 -d public
     
 or
 
-    python -m http.server 8000 -d .
+    python -m http.server 8000 -d public
 
 then navigate to the following address in your browser http://127.0.0.1:8000/
 
