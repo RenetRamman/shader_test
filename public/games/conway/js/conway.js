@@ -54,9 +54,9 @@ export function start({ onBackToLauncher } = {}) {
   let lastFrameTime = 0;
 
   const shaders = {
-    vertexShader: "games/conway/shaders/vertex.vert",
-    fragmentShader: "games/conway/shaders/game_of_life.frag",
-    bufferShader: "games/conway/shaders/buffer.frag",
+    vertexShader: "/games/conway/shaders/vertex.vert",
+    fragmentShader: "/games/conway/shaders/game_of_life.frag",
+    bufferShader: "/games/conway/shaders/buffer.frag",
     /** Basename under /images/; set from images/manifest.json in init(). */
     image: null,
   };
@@ -186,7 +186,7 @@ export function start({ onBackToLauncher } = {}) {
     paintToolSelect.addEventListener("change", applyPaintTool);
   }
 
-  const IMAGE_MANIFEST_URL = "images/manifest.json";
+  const IMAGE_MANIFEST_URL = "/images/manifest.json";
 
   function imageEntryFile(entry) {
     return typeof entry === "string" ? entry : entry && entry.file;
@@ -525,4 +525,10 @@ export function start({ onBackToLauncher } = {}) {
 
   init();
 }
+
+start({
+  onBackToLauncher: () => {
+    window.location.href = "/";
+  },
+});
 
