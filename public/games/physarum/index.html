@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>New Game (Template)</title>
+        <title>Physarum</title>
 
         <link rel="stylesheet" href="/css/style.css" />
     </head>
@@ -18,10 +18,27 @@
                 <button id="backToLauncherButton" class="menuActionButton">
                     Back to games
                 </button>
+
+                <label>
+                    Alive density
+                    <span id="thresholdText">0.50</span>
+                    <input
+                        type="range"
+                        id="thresholdSlider"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value="0.5"
+                    />
+                </label>
+
+                <button id="generateSeedButton" class="menuActionButton">
+                    Generate seed
+                </button>
             </div>
         </div>
 
         <script src="/libs/three.min.js"></script>
-        <script type="module" src="/games/physarum/js/template.js"></script>
+        <script type="module" src="/games/physarum/js/physarum.js"></script>
     </body>
 </html>

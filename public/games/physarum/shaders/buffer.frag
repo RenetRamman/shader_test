@@ -6,6 +6,5 @@ uniform vec2 u_resolution;
 varying vec2 v_uv;
 
 void main() {
-    float alive = texture2D(u_texture, v_uv).r;
-    gl_FragColor = vec4(vec3(alive), 1.0);
+    gl_FragColor = texture2D(u_texture, v_uv);
 }

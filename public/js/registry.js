@@ -8,8 +8,9 @@ export const GAMES = [
   },
   {
     id: "physarum",
-    name: "Physarum",
-    description: "Blank GLSL scaffold. Copy public/games/physarum/ to start another game.",
+    name: "Physarum slime mould simulation",
+    description:
+      "GPU cellular automaton simulating physarum slime mould growth.",
     page: "/games/physarum/index.html",
   },
 ];
